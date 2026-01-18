@@ -107,6 +107,51 @@ export function ChapterList() {
     })
   }
 
+  const handleSaveChapters = async () => {
+    if (chapters.length === 0) {
+      alert('No chapters to save')
+      return
+    }
+
+    try {
+      const filePath = await window.electronAPI.dialog.saveFile([
+        { name: 'JSON', extensions: ['json'] }
+      ])
+
+      if (filePath) {
+        await window.electronAPI.fs.writeFile(
+          filePath,
+          JSON.stringify(chapters, null, 2)
+        )
+      }
+    } catch (error) {
+      console.error('Failed to save chapters:', error)
+      alert('Failed to save chapters')
+    }
+  }
+
+  const handleLoadChapters = async () => {
+    try {
+      const filePath = await window.electronAPI.dialog.openFile([
+        { name: 'JSON', extensions: ['json'] }
+      ])
+
+      if (filePath) {
+        const content = await window.electronAPI.fs.readFile(filePath)
+        const loadedChapters = JSON.parse(content)
+        // Basic validation
+        if (Array.isArray(loadedChapters) && loadedChapters.every((c: any) => c.id && c.title && typeof c.startTime === 'number')) {
+          setChapters(loadedChapters)
+        } else {
+          alert('Invalid chapter file format')
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load chapters:', error)
+      alert('Failed to load chapters')
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -114,6 +159,22 @@ export function ChapterList() {
           {chapters.length} Chapters
         </h3>
         <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={handleLoadChapters}
+            title="Load Chapters"
+          >
+            📂
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={handleSaveChapters}
+            disabled={chapters.length === 0}
+            title="Save Chapters"
+          >
+            💾
+          </button>
+          <div style={{ width: '1px', height: '24px', background: 'var(--color-border)', margin: '0 4px' }} />
           <button
             className="btn btn-secondary"
             onClick={handleAddChapter}

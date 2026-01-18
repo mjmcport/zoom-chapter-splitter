@@ -7,6 +7,11 @@ export interface ElectronAPI {
   dialog: {
     openFile: (filters: { name: string; extensions: string[] }[]) => Promise<string | null>
     selectFolder: () => Promise<string | null>
+    saveFile: (filters: { name: string; extensions: string[] }[]) => Promise<string | null>
+  }
+  fs: {
+    readFile: (filePath: string) => Promise<string>
+    writeFile: (filePath: string, content: string) => Promise<void>
   }
   vtt: {
     parse: (filePath: string) => Promise<{
@@ -73,7 +78,12 @@ const electronAPI: ElectronAPI = {
   },
   dialog: {
     openFile: (filters) => ipcRenderer.invoke('dialog:openFile', filters),
-    selectFolder: () => ipcRenderer.invoke('dialog:selectFolder')
+    selectFolder: () => ipcRenderer.invoke('dialog:selectFolder'),
+    saveFile: (filters) => ipcRenderer.invoke('dialog:showSaveDialog', filters)
+  },
+  fs: {
+    readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
+    writeFile: (filePath, content) => ipcRenderer.invoke('fs:writeFile', filePath, content)
   },
   vtt: {
     parse: (filePath) => ipcRenderer.invoke('vtt:parse', filePath)

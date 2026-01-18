@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { AppState, Chapter, ParsedTranscript, VideoInfo, ExportSettings, LlmSettings, AppView } from '../types'
 
 interface AppActions {
@@ -62,59 +63,78 @@ const initialState: AppState = {
   videoElement: null
 }
 
-export const useAppStore = create<AppState & AppActions>((set, get) => ({
-  ...initialState,
+export const useAppStore = create<AppState & AppActions>()(
+  persist(
+    (set, get) => ({
+      ...initialState,
 
-  setCurrentView: (view) => set({ currentView: view }),
-  
-  setVideoPath: (path) => set({ videoPath: path }),
-  
-  setVttPath: (path) => set({ vttPath: path }),
-  
-  setVideoInfo: (info) => set({ videoInfo: info }),
-  
-  setTranscript: (transcript) => set({ transcript }),
-  
-  setChapters: (chapters) => set({ chapters }),
-  
-  updateChapter: (id, updates) => set((state) => ({
-    chapters: state.chapters.map((ch) =>
-      ch.id === id ? { ...ch, ...updates } : ch
-    )
-  })),
-  
-  addChapter: (chapter) => set((state) => ({
-    chapters: [...state.chapters, chapter].sort((a, b) => a.startTime - b.startTime)
-  })),
-  
-  removeChapter: (id) => set((state) => ({
-    chapters: state.chapters.filter((ch) => ch.id !== id),
-    selectedChapterId: state.selectedChapterId === id ? null : state.selectedChapterId
-  })),
-  
-  setSelectedChapterId: (id) => set({ selectedChapterId: id }),
-  
-  updateExportSettings: (settings) => set((state) => ({
-    exportSettings: { ...state.exportSettings, ...settings }
-  })),
-  
-  updateLlmSettings: (settings) => set((state) => ({
-    llmSettings: { ...state.llmSettings, ...settings }
-  })),
-  
-  setIsProcessing: (isProcessing) => set({ isProcessing }),
-  
-  setProcessingProgress: (progress) => set({ processingProgress: progress }),
-  
-  setVideoElement: (el) => set({ videoElement: el }),
-  
-  seekTo: (time) => {
-    const state = get()
-    if (state.videoElement) {
-      state.videoElement.currentTime = time
-      state.videoElement.play()
+      setCurrentView: (view) => set({ currentView: view }),
+      
+      setVideoPath: (path) => set({ videoPath: path }),
+      
+      setVttPath: (path) => set({ vttPath: path }),
+      
+      setVideoInfo: (info) => set({ videoInfo: info }),
+      
+      setTranscript: (transcript) => set({ transcript }),
+      
+      setChapters: (chapters) => set({ chapters }),
+      
+      updateChapter: (id, updates) => set((state) => ({
+        chapters: state.chapters.map((ch) =>
+          ch.id === id ? { ...ch, ...updates } : ch
+        )
+      })),
+      
+      addChapter: (chapter) => set((state) => ({
+        chapters: [...state.chapters, chapter].sort((a, b) => a.startTime - b.startTime)
+      })),
+      
+      removeChapter: (id) => set((state) => ({
+        chapters: state.chapters.filter((ch) => ch.id !== id),
+        selectedChapterId: state.selectedChapterId === id ? null : state.selectedChapterId
+      })),
+      
+      setSelectedChapterId: (id) => set({ selectedChapterId: id }),
+      
+      updateExportSettings: (settings) => set((state) => ({
+        exportSettings: { ...state.exportSettings, ...settings }
+      })),
+      
+      updateLlmSettings: (settings) => set((state) => ({
+        llmSettings: { ...state.llmSettings, ...settings }
+      })),
+      
+      setIsProcessing: (isProcessing) => set({ isProcessing }),
+      
+      setProcessingProgress: (progress) => set({ processingProgress: progress }),
+      
+      setVideoElement: (el) => set({ videoElement: el }),
+      
+      seekTo: (time) => {
+        const state = get()
+        if (state.videoElement) {
+          state.videoElement.currentTime = time
+          state.videoElement.play()
+        }
+      },
+      
+      reset: () => set(initialState)
+    }),
+    {
+      name: 'zoom-chapter-splitter-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        currentView: state.currentView,
+        videoPath: state.videoPath,
+        vttPath: state.vttPath,
+        videoInfo: state.videoInfo,
+        transcript: state.transcript,
+        chapters: state.chapters,
+        exportSettings: state.exportSettings,
+        llmSettings: state.llmSettings
+        // Exclude transient state: isProcessing, processingProgress, videoElement
+      })
     }
-  },
-  
-  reset: () => set(initialState)
-}))
+  )
+)

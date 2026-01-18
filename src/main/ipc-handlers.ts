@@ -3,7 +3,7 @@ import { VttParserService } from './services/vtt-parser.service'
 import { KeychainService } from './services/keychain.service'
 import { LlmService } from './services/llm.service'
 import { FfmpegService, ExportOptions } from './services/ffmpeg.service'
-import { readFile } from 'fs/promises'
+import { readFile, writeFile } from 'fs/promises'
 
 const vttParser = new VttParserService()
 const keychainService = new KeychainService()
@@ -26,6 +26,22 @@ export function registerIpcHandlers(): void {
     })
     if (result.canceled) return null
     return result.filePaths[0]
+  })
+
+  ipcMain.handle('dialog:showSaveDialog', async (_: IpcMainInvokeEvent, filters: { name: string; extensions: string[] }[]) => {
+    const result = await dialog.showSaveDialog({
+      filters
+    })
+    if (result.canceled) return null
+    return result.filePath
+  })
+
+  ipcMain.handle('fs:readFile', async (_: IpcMainInvokeEvent, filePath: string) => {
+    return readFile(filePath, 'utf-8')
+  })
+
+  ipcMain.handle('fs:writeFile', async (_: IpcMainInvokeEvent, filePath: string, content: string) => {
+    return writeFile(filePath, content, 'utf-8')
   })
 
   ipcMain.handle('vtt:parse', async (_: IpcMainInvokeEvent, filePath: string) => {
