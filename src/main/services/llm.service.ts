@@ -191,7 +191,15 @@ Guidelines:
       if (!jsonMatch) return []
       
       const parsed = JSON.parse(jsonMatch[0])
-      return parsed.chapters || []
+      const chapters = parsed.chapters || []
+      
+      // Validate chapters
+      return chapters.filter((ch: any) => 
+        typeof ch.startTime === 'number' && 
+        typeof ch.endTime === 'number' && 
+        ch.endTime > ch.startTime &&
+        ch.title
+      )
     } catch {
       return []
     }
@@ -200,30 +208,66 @@ Guidelines:
   private mergeOverlappingChapters(chapters: ChapterSuggestion[]): ChapterSuggestion[] {
     if (chapters.length === 0) return []
     
+    // Sort by start time
     const sorted = [...chapters].sort((a, b) => a.startTime - b.startTime)
     const merged: ChapterSuggestion[] = [sorted[0]]
     
     for (let i = 1; i < sorted.length; i++) {
-      const current = sorted[i]
+      const current = { ...sorted[i] } // Clone to avoid mutating original
       const previous = merged[merged.length - 1]
       
-      const overlap = previous.endTime - current.startTime
-      if (overlap > 30) {
-        if (current.confidence > previous.confidence) {
-          previous.endTime = current.startTime
-        } else {
-          current.startTime = previous.endTime
+      // Ensure current chapter is valid before processing
+      if (current.endTime <= current.startTime) continue
+
+      // Check for overlap
+      if (current.startTime < previous.endTime) {
+        const overlap = previous.endTime - current.startTime
+        
+        // If huge overlap (likely duplicate or bad timestamp), resolve it
+        if (overlap > 0) {
+          if (current.confidence > previous.confidence) {
+            // Current is better, cut previous short
+            // But don't make previous invalid
+            if (current.startTime > previous.startTime + 30) {
+              previous.endTime = current.startTime
+            } else {
+              // Previous would be too short/invalid, so we might have to discard one
+              // Or keep previous if we can't cut it safely?
+              // Let's bias towards keeping sequential flow
+              previous.endTime = current.startTime
+            }
+          } else {
+            // Previous is better (or equal), push current start
+            current.startTime = previous.endTime
+          }
         }
       }
       
-      if (current.endTime - current.startTime >= 60) {
+      // Verify validity after adjustment
+      const isCurrentValid = current.endTime > current.startTime + 10 // At least 10s duration
+      const isPreviousValid = previous.endTime > previous.startTime + 10
+      
+      if (!isPreviousValid) {
+        // If previous became invalid, remove it and replace with current (if valid)
+        merged.pop()
+        if (isCurrentValid) merged.push(current)
+      } else if (isCurrentValid) {
         merged.push(current)
       }
     }
     
-    return merged.map(chapter => ({
-      ...chapter,
-      startTime: Math.max(0, chapter.startTime - 3)
-    }))
+    // Final pass: ensure strict sequentiality and safety padding
+    return merged.map((chapter, index) => {
+      // Apply 3s rollback only if it doesn't overlap previous
+      const previousEnd = index > 0 ? merged[index - 1].endTime : 0
+      const newStart = Math.max(previousEnd, Math.max(0, chapter.startTime - 3))
+      
+      return {
+        ...chapter,
+        startTime: newStart,
+        // Ensure duration is positive
+        endTime: Math.max(chapter.endTime, newStart + 10) 
+      }
+    })
   }
 }

@@ -133,7 +133,8 @@ export function ChapterList() {
   const handleLoadChapters = async () => {
     try {
       const filePath = await window.electronAPI.dialog.openFile([
-        { name: 'JSON', extensions: ['json'] }
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
       ])
 
       if (filePath) {
