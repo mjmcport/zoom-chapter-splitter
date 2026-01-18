@@ -30,7 +30,9 @@ export class LlmService {
     
     onProgress?.({ stage: 'Preparing transcript', percent: 10 })
     
-    const chunks = this.chunkTranscript(transcript)
+    // Reduce chunk size to avoid rate limits (approx 5k tokens per chunk)
+    // 25000 chars / 4 chars/token ~= 6250 tokens
+    const chunks = this.chunkTranscript(transcript, 25000)
     const allSuggestions: ChapterSuggestion[] = []
     
     for (let i = 0; i < chunks.length; i++) {
@@ -44,6 +46,11 @@ export class LlmService {
         : await this.analyzeWithAnthropic(chunks[i], model)
       
       allSuggestions.push(...suggestions)
+
+      // Add delay between chunks to respect rate limits (especially for OpenAI Tier 1)
+      if (i < chunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 2000))
+      }
     }
     
     onProgress?.({ stage: 'Synthesizing chapters', percent: 85 })
@@ -57,7 +64,7 @@ export class LlmService {
     }
   }
 
-  private chunkTranscript(transcript: string, maxChars = 60000): string[] {
+  private chunkTranscript(transcript: string, maxChars = 25000): string[] {
     const lines = transcript.split('\n')
     const chunks: string[] = []
     let currentChunk: string[] = []
@@ -65,6 +72,25 @@ export class LlmService {
     
     for (const line of lines) {
       const lineSize = line.length + 1
+      
+      // Handle edge case where a single line is larger than maxChars
+      if (lineSize > maxChars) {
+        // If we have accumulated content, push it first
+        if (currentChunk.length > 0) {
+          chunks.push(currentChunk.join('\n'))
+          currentChunk = []
+          currentChunkSize = 0
+        }
+        
+        // Split the long line into pieces
+        let remainingLine = line
+        while (remainingLine.length > 0) {
+          const splitSize = Math.min(remainingLine.length, maxChars)
+          chunks.push(remainingLine.slice(0, splitSize))
+          remainingLine = remainingLine.slice(splitSize)
+        }
+        continue
+      }
       
       if (currentChunkSize + lineSize > maxChars && currentChunk.length > 0) {
         chunks.push(currentChunk.join('\n'))
