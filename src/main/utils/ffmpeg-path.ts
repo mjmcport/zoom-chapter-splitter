@@ -3,38 +3,31 @@ import { join } from 'path'
 import { existsSync } from 'fs'
 
 export function getFfmpegPath(): string {
-  // In development, use ffmpeg-static from node_modules
-  // In production, use the bundled binary in resources
-  
+  // In production, use the bundled binary in resources folder
   if (app.isPackaged) {
-    // Production: binary is in resources folder
     const resourcePath = join(process.resourcesPath, 'ffmpeg')
     if (existsSync(resourcePath)) {
       return resourcePath
     }
   }
-  
-  // Development: use ffmpeg-static
+
+  // Development: use ffmpeg-ffprobe-static from node_modules
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const ffmpegStatic = require('ffmpeg-static')
-  return ffmpegStatic as string
+  const ffmpegStatic = require('ffmpeg-ffprobe-static')
+  return ffmpegStatic.ffmpegPath
 }
 
 export function getFfprobePath(): string {
-  // ffprobe is typically in the same directory as ffmpeg
-  const ffmpegPath = getFfmpegPath()
-  const ffprobePath = ffmpegPath.replace(/ffmpeg(\.exe)?$/, 'ffprobe$1')
-  
-  if (existsSync(ffprobePath)) {
-    return ffprobePath
+  // In production, use the bundled binary in resources folder
+  if (app.isPackaged) {
+    const resourcePath = join(process.resourcesPath, 'ffprobe')
+    if (existsSync(resourcePath)) {
+      return resourcePath
+    }
   }
-  
-  // Fallback: try ffprobe-static or system ffprobe
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const ffprobeStatic = require('ffprobe-static')
-    return ffprobeStatic.path
-  } catch {
-    return 'ffprobe' // Use system ffprobe
-  }
+
+  // Development: use ffmpeg-ffprobe-static from node_modules
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const ffmpegStatic = require('ffmpeg-ffprobe-static')
+  return ffmpegStatic.ffprobePath
 }

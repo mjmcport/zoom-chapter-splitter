@@ -1,6 +1,8 @@
 import { app, BrowserWindow, protocol, net } from 'electron'
 import { join } from 'path'
 import { registerIpcHandlers } from './ipc-handlers'
+import { StorageService } from './services/storage.service'
+import { migrateFromKeytar } from './services/migration.service'
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'media', privileges: { stream: true, bypassCSP: true, supportFetchAPI: true } }
@@ -31,7 +33,7 @@ function createWindow(): void {
   })
 
   if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:5173')
+    mainWindow.loadURL('http://localhost:5180')
     mainWindow.webContents.openDevTools()
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
@@ -42,7 +44,10 @@ function createWindow(): void {
   })
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  const storage = new StorageService()
+  await migrateFromKeytar(storage)
+  
   registerIpcHandlers()
   createWindow()
 
