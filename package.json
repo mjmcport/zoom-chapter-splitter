@@ -13,26 +13,26 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "zustand": "^4.5.5",
+    "@anthropic-ai/sdk": "^0.32.1",
+    "ffmpeg-ffprobe-static": "^6.1.2-rc.1",
     "fluent-ffmpeg": "^2.1.3",
-    "ffmpeg-ffprobe-static": "^6.1.1",
     "node-webvtt": "^1.9.4",
     "openai": "^4.77.0",
-    "@anthropic-ai/sdk": "^0.32.1"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.5"
   },
   "devDependencies": {
-    "electron": "^33.2.1",
-    "electron-builder": "^25.1.8",
-    "electron-vite": "^2.3.0",
-    "vite": "^5.4.11",
-    "typescript": "^5.7.2",
-    "@types/react": "^18.3.14",
-    "@types/react-dom": "^18.3.4",
     "@types/fluent-ffmpeg": "^2.1.27",
     "@types/node": "^22.10.2",
-    "@vitejs/plugin-react": "^4.3.4"
+    "@types/react": "^18.3.14",
+    "@types/react-dom": "^18.3.4",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^41.3.0",
+    "electron-builder": "^26.8.1",
+    "electron-vite": "^5.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^7.3.2"
   },
   "build": {
     "appId": "com.zoomchaptersplitter.app",
@@ -42,11 +42,17 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "hardenedRuntime": true,
