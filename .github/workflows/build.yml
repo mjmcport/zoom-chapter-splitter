@@ -15,6 +15,10 @@ jobs:
     strategy:
       matrix:
         arch: [x64, arm64]
+    env:
+      # Map secret to env var so we can reference it in step `if:` conditions
+      # (GitHub Actions does not allow secrets.* in if expressions)
+      HAS_APPLE_CERT: ${{ secrets.APPLE_CERTIFICATE_BASE64 != '' && 'true' || '' }}
 
     steps:
       - name: Checkout
@@ -30,8 +34,8 @@ jobs:
         run: npm ci
 
       - name: Install Apple certificate
-        # Only run if the certificate secret is present (skip for forks / unsigned builds)
-        if: secrets.APPLE_CERTIFICATE_BASE64 != ''
+        # Only run if the certificate secret is present (skip for unsigned builds)
+        if: env.HAS_APPLE_CERT == 'true'
         env:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
