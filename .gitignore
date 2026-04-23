@@ -3,3 +3,14 @@ out
 dist
 .DS_Store
 *.log
+
+# Environment & secrets — never commit these
+.env
+.env.*
+*.local
+
+# Certificate artifacts — generated during signing, never commit
+*.p12
+*.cer
+build/*.p12
+build/*.cer
